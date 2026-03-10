@@ -1,68 +1,125 @@
-Step-by-Step Setup Tutorial (For your repository or documentation)
-Prerequisites: An active AWS Account and basic familiarity with the AWS Management Console.
+# Step-by-Step Setup Tutorial
 
-Step 1: Database Setup (Amazon DynamoDB)
-Navigate to the DynamoDB Console and click Create table.
+This guide walks you through setting up the AWS services required to run the application end-to-end.
 
-Table name: CloudFacts
+## Prerequisites
 
-Partition key: FactID (Type: String).
+- An active AWS account
+- Basic familiarity with the AWS Management Console
 
-Leave settings on Default (On-Demand) and click Create table.
+---
 
-Once active, go to Explore table items -> select your table -> Create item.
+## Step 1: Database Setup (Amazon DynamoDB)
 
-Add several items where FactID is a number (e.g., "1") and create a new String attribute named FactText containing a standard cloud computing fact.
+1. Open the **Amazon DynamoDB** console.
+2. Select **Create table**.
+3. Configure the table:
+   - **Table name:** `CloudFacts`
+   - **Partition key:** `FactID` (Type: **String**)
+4. Leave all other settings as default (On-Demand capacity) and select **Create table**.
+5. After the table status becomes **Active**, add sample data:
+   - Go to **Explore table items**
+   - Select the `CloudFacts` table
+   - Select **Create item**
+6. Create multiple items with the following attributes:
+   - `FactID` (String): use numeric values as strings (for example: `"1"`, `"2"`, `"3"`)
+   - `FactText` (String): a short cloud computing fact
 
-Step 2: Compute & AI Logic (AWS Lambda)
-Navigate to the Lambda Console and click Create function.
+---
 
-Name: CloudFunFacts | Runtime: Python 3.13. Click Create.
+## Step 2: Compute & AI Logic (AWS Lambda)
 
-Under the Configuration tab, select General configuration and edit the Timeout to 20 seconds (to allow the AI model time to respond).
+1. Open the **AWS Lambda** console.
+2. Select **Create function**.
+3. Configure the function:
+   - **Function name:** `CloudFunFacts`
+   - **Runtime:** Python 3.13
+4. Select **Create function**.
 
-Under the Configuration tab, select Permissions, click the Execution Role link, and attach the following policies to grant your function necessary access:
+### Configure timeout
 
-AmazonDynamoDBReadOnlyAccess
+1. In the Lambda function page, open the **Configuration** tab.
+2. Go to **General configuration** and select **Edit**.
+3. Set **Timeout** to **20 seconds** (to allow time for the model to respond).
+4. Save changes.
 
-AmazonBedrockFullAccess
+### Configure IAM permissions
 
-In the Code source section, paste your Python script that connects to DynamoDB and calls bedrock.converse(). Click Deploy.
+1. In the **Configuration** tab, go to **Permissions**.
+2. Select the **Execution role** link to open the role in IAM.
+3. Attach the following managed policies to the role:
+   - `AmazonDynamoDBReadOnlyAccess`
+   - `AmazonBedrockFullAccess`
 
-Step 3: API Layer (Amazon API Gateway)
-Navigate to the API Gateway Console and click Create API.
+### Deploy the code
 
-Build an HTTP API.
+1. Return to the Lambda function page.
+2. In **Code source**, paste/upload your Python code that:
+   - Reads items from DynamoDB
+   - Calls Amazon Bedrock using `bedrock.converse()`
+3. Select **Deploy**.
 
-Name: FunfactsAPI. Add an integration pointing to your CloudFunFacts Lambda function.
+---
 
-Configure Routes: Set the Method to GET and the Resource path to /funfact.
+## Step 3: API Layer (Amazon API Gateway)
 
-Configure CORS: This is required for your frontend to communicate with the API. Navigate to the CORS settings for your API and configure it as follows:
+1. Open the **Amazon API Gateway** console.
+2. Select **Create API**.
+3. Choose **HTTP API** (Build).
+4. Configure the API:
+   - **API name:** `FunfactsAPI`
+   - **Integration:** select your `CloudFunFacts` Lambda function
 
-Allowed origins: *
+### Configure routes
 
-Allowed methods: *
+1. Create a route with:
+   - **Method:** `GET`
+   - **Resource path:** `/funfact`
 
-Allowed headers: *
+### Configure CORS
 
-Max age: 300
+CORS is required for browser-based clients (your frontend) to call the API.
 
-Navigate to Stages, select your default stage, and copy the Invoke URL.
+1. Open the **CORS** settings for your HTTP API.
+2. Configure the following (adjust as needed for production):
+   - **Allowed origins:** `*`
+   - **Allowed methods:** `*`
+   - **Allowed headers:** `*`
+   - **Max age:** `300`
+3. Save changes.
 
-Step 4: Frontend Hosting (AWS Amplify)
-On your local machine, open your index.html file and locate the JavaScript fetch function.
+### Copy the invoke URL
 
-Update the API_URL variable with your specific API Gateway Invoke URL (ensure it ends in /funfact).
+1. Go to **Stages**.
+2. Select the default stage.
+3. Copy the **Invoke URL**. You will use it in the frontend (ensure your final URL ends with `/funfact`).
 
-Compress the index.html file into a ZIP archive (e.g., frontend.zip).
+---
 
-Navigate to the AWS Amplify Console.
+## Step 4: Frontend Hosting (AWS Amplify)
 
-Select Host your web app -> Deploy without Git provider.
+1. On your local machine, open `index.html`.
+2. Find the JavaScript `fetch` call (or API configuration).
+3. Update `API_URL` with your API Gateway invoke URL, ensuring it ends with `/funfact`.
 
-Name your app (e.g., CloudFunFactsUI) and specify an environment name.
+### Package the frontend
 
-Drag and drop your ZIP file into the upload area and click Save and deploy.
+1. Create a ZIP archive containing `index.html` (for example: `frontend.zip`).
 
-Once deployment is complete, click the generated domain URL to test the live, full-stack application.
+### Deploy with Amplify
+
+1. Open the **AWS Amplify** console.
+2. Select **Host your web app**.
+3. Choose **Deploy without Git provider**.
+4. Configure the deployment:
+   - **App name:** for example, `CloudFunFactsUI`
+   - **Environment name:** choose an appropriate environment name
+5. Upload (drag and drop) your ZIP file.
+6. Select **Save and deploy**.
+
+### Verify deployment
+
+1. After deployment completes, open the generated Amplify domain URL.
+2. Confirm the application loads and successfully calls the API.
+
+---
